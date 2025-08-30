@@ -1,7 +1,8 @@
 # 🤖 Profiausbau Aachen GmbH Chatbot Backend
 
 Dies ist das Chatbot-Backend für die **Profiausbau Aachen GmbH**.  
-Es verarbeitet FAQs aus der Datenbank (`faq`), bietet eine Admin-Seite zur Pflege und einen Chat-Endpoint mit GPT-Fallback.
+Es verarbeitet FAQs aus der Datenbank (`faq`-Tabelle), bietet eine Admin-Seite zur Pflege und einen Chat-Endpoint mit GPT-Fallback.  
+Caching erfolgt über **Redis (Upstash)**, Logs in **Postgres**.
 
 ---
 
@@ -9,11 +10,11 @@ Es verarbeitet FAQs aus der Datenbank (`faq`), bietet eine Admin-Seite zur Pfleg
 
 - **Admin-Seite (FAQ bearbeiten):**  
   <a href="https://profiausbau-chatbot-backend.onrender.com/admin.html" target="_blank">https://profiausbau-chatbot-backend.onrender.com/admin.html</a>
- 
-- **FAQ-API (liefert aktuelle FAQ-Einträge):**  
+
+- **FAQ-API (aktuelle FAQs):**  
   <a href="https://profiausbau-chatbot-backend.onrender.com/api/faq" target="_blank">https://profiausbau-chatbot-backend.onrender.com/api/faq</a>
 
-- **Chat-Endpoint (POST mit `{ message }`):**  
+- **Chat-API (Chatbot Endpoint, POST mit `{ message }`):**  
   <a href="https://profiausbau-chatbot-backend.onrender.com/api/chat" target="_blank">https://profiausbau-chatbot-backend.onrender.com/api/chat</a>
 
 - **Health-Check (für Monitoring):**  
@@ -23,26 +24,28 @@ Es verarbeitet FAQs aus der Datenbank (`faq`), bietet eine Admin-Seite zur Pfleg
 
 ## ⚙️ Funktionen
 
-- Verwaltung von FAQ-Daten (PostgreSQL `faq`-Tabelle)  
-- Chat-Endpoint mit **FAQ-Matching** (Fuse.js) und **GPT-Fallback**  
-- Admin-Oberfläche mit Login, JSON-Editor und Cache-Verwaltung  
-- Speicherung aller Chats in `chat_log` (inkl. Quelle: `faq` oder `gpt`)  
-- Automatische **FAQ-Kandidaten** aus echten Nutzerfragen  
+- Verwaltung von FAQ-Daten (Postgres-Tabelle `faq`)  
+- Automatisches FAQ-Caching in Redis (Upstash)  
+- Chat-Endpoint mit FAQ-Matching (Fuse.js)  
+- GPT-Fallback (OpenAI GPT-4o)  
+- Admin-Oberfläche mit Login, JSON-Editor & FAQ-Kandidaten  
+- Speicherung aller Chat-Logs (`chat_log` Tabelle in Postgres)  
 
 ---
 
-## 📋 FAQ-Beispiele
+## 🚀 Setup (lokale Entwicklung)
 
-So sieht die Struktur in der FAQ-Datenbank (`faq`) aus:
+```bash
+# Repository klonen
+git clone <repo-url>
+cd chatbot-backend
 
-```json
-[
-  {
-    "frage": "Was kostet eine Badrenovierung?",
-    "antwort": "Die Kosten hängen vom Zustand und Ihren Wünschen ab. Wir beraten Sie gern persönlich."
-  },
-  {
-    "frage": "Übernehmt ihr auch Trockenbau?",
-    "antwort": "Ja, Trockenbau gehört zu unseren Kernleistungen."
-  }
-]
+# Abhängigkeiten installieren
+npm install
+
+# Umgebungsvariablen setzen (.env)
+cp .env.example .env
+# trage DATABASE_URL, UPSTASH_REST_URL, UPSTASH_REST_TOKEN, OPENAI_API_KEY, OPENAI_ORG_ID ein
+
+# Server starten
+node server.js
