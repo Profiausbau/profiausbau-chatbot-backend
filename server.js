@@ -61,18 +61,26 @@ async function loadFaqData() {
   return data
 }
 
-  app.post('/api/chat', async (req, res) => {
-  const { message } = req.body;
+// === Health Check (GET + HEAD) ===
+const healthHandler = (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString()
+  })
+}
+app.get('/api/health', healthHandler)
+app.head('/api/health', healthHandler)
 
-  // ➤ NEU: Direkt auf Ping reagieren, ohne FAQ/GPT zu laden
+// === Chat Endpoint ===
+app.post('/api/chat', async (req, res) => {
+  const { message } = req.body
+
+  // ➤ Direkt auf Ping reagieren
   if (message === 'ping') {
-    return res.json({ reply: 'pong' }); // schnelle Antwort zur Initialisierung
+    return res.json({ reply: 'pong' })
   }
 
-  // ... hier geht dein bestehender Code weiter ...
-
   const faqData = await loadFaqData()
-    
   if (!fuse || !fuse._docs || fuse._docs.length !== faqData.length) {
     fuse = new Fuse(faqData, {
       keys: ['frage'],
@@ -84,29 +92,29 @@ async function loadFaqData() {
 
   const result = fuse.search(message)
   if (result.length) {
-  let antwort = result[0].item.antwort;
+    let antwort = result[0].item.antwort
 
-  // ✅ Sicherheitsprüfung Geschäftsführer
-  if (
-    antwort.toLowerCase().includes("geschäftsführer") &&
-    !antwort.toLowerCase().includes("leszek damian cieslok")
-  ) {
-    antwort = "Der Geschäftsführer der Profiausbau Aachen GmbH ist Leszek Damian Cieslok.";
+    // ✅ Sicherheitsprüfung Geschäftsführer
+    if (
+      antwort.toLowerCase().includes("geschäftsführer") &&
+      !antwort.toLowerCase().includes("leszek damian cieslok")
+    ) {
+      antwort = "Der Geschäftsführer der Profiausbau Aachen GmbH ist Leszek Damian Cieslok."
+    }
+
+    try {
+      await pool.query(
+        'INSERT INTO chat_log (frage, antwort, quelle) VALUES ($1, $2, $3)',
+        [message, antwort, 'faq']
+      )
+    } catch (err) {
+      console.warn('⚠️ Fehler beim Speichern des Logs (FAQ):', err.message)
+    }
+    console.log('✅ FAQ-Treffer:', result[0].item.frage)
+    return res.json({ reply: antwort })
   }
 
-  try {
-    await pool.query(
-      'INSERT INTO chat_log (frage, antwort, quelle) VALUES ($1, $2, $3)',
-      [message, antwort, 'faq']
-    );
-  } catch (err) {
-    console.warn('⚠️ Fehler beim Speichern des Logs (FAQ):', err.message);
-  }
-  console.log('✅ FAQ-Treffer:', result[0].item.frage);
-  return res.json({ reply: antwort });
-}
-
-
+  // === GPT Fallback ===
   try {
     const response = await axios.post(
       'https://api.openai.com/v1/chat/completions',
@@ -138,17 +146,16 @@ Wenn du etwas nicht weißt, bitte höflich um direkte Kontaktaufnahme:
       }
     )
 
-    let botReply = response.data.choices?.[0]?.message?.content;
+    let botReply = response.data.choices?.[0]?.message?.content
+    if (!botReply) return res.status(500).json({ error: 'Antwort war leer.' })
 
-if (!botReply) return res.status(500).json({ error: 'Antwort war leer.' });
-
-// ✅ Sicherheitsprüfung für GPT-Antwort
-if (
-  botReply.toLowerCase().includes("geschäftsführer") &&
-  !botReply.toLowerCase().includes("leszek damian cieslok")
-) {
-  botReply = "Der Geschäftsführer der Profiausbau Aachen GmbH ist Leszek Damian Cieslok.";
-}
+    // ✅ Sicherheitsprüfung für GPT-Antwort
+    if (
+      botReply.toLowerCase().includes("geschäftsführer") &&
+      !botReply.toLowerCase().includes("leszek damian cieslok")
+    ) {
+      botReply = "Der Geschäftsführer der Profiausbau Aachen GmbH ist Leszek Damian Cieslok."
+    }
 
     try {
       await pool.query(
@@ -196,12 +203,7 @@ app.get('/api/faq-candidates', async (req, res) => {
 app.post('/api/faq-add-single', async (req, res) => {
   const { frage, antwort } = req.body
 
-  console.log('📥 Neue FAQ-Kandidat-Anfrage empfangen:')
-  console.log('Frage:', frage)
-  console.log('Antwort:', antwort)
-
   if (!frage || !antwort) {
-    console.warn('❌ Ungültige Daten: Frage oder Antwort fehlt')
     return res.status(400).json({ error: 'Frage oder Antwort fehlt' })
   }
 
@@ -210,13 +212,11 @@ app.post('/api/faq-add-single', async (req, res) => {
       'INSERT INTO faq (frage, antwort) VALUES ($1, $2)',
       [frage, antwort]
     )
-    console.log('✅ FAQ erfolgreich gespeichert in DB.')
 
     try {
       await axios.get(`${UPSTASH_URL}/del/faq`, {
         headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` }
       })
-      console.log('🧹 Redis-Cache gelöscht nach Eintrag.')
     } catch (err) {
       console.warn('⚠️ Fehler beim Cache-Löschen (Redis):', err.message)
     }
@@ -239,23 +239,17 @@ app.post('/api/faq', async (req, res) => {
     await client.query('BEGIN')
     await client.query('DELETE FROM faq')
 
-for (const item of faqs) {
-  if (!item.frage || !item.antwort) {
-    console.warn('⚠️ Ungültiger FAQ-Eintrag übersprungen:', item)
-    continue
-  }
-
-  try {
-    await client.query(
-      'INSERT INTO faq (frage, antwort) VALUES ($1, $2) ON CONFLICT (frage) DO NOTHING',
-      [item.frage, item.antwort]
-    )
-  } catch (err) {
-    console.warn('⚠️ Fehler bei Eintrag:', item.frage, err.message)
-    // kein throw mehr – damit die Schleife nicht abbricht
-  }
-}
-
+    for (const item of faqs) {
+      if (!item.frage || !item.antwort) continue
+      try {
+        await client.query(
+          'INSERT INTO faq (frage, antwort) VALUES ($1, $2) ON CONFLICT (frage) DO NOTHING',
+          [item.frage, item.antwort]
+        )
+      } catch (err) {
+        console.warn('⚠️ Fehler bei Eintrag:', item.frage, err.message)
+      }
+    }
 
     await client.query('COMMIT')
     client.release()
@@ -281,10 +275,8 @@ app.delete('/api/cache', async (req, res) => {
     await axios.get(`${UPSTASH_URL}/del/faq`, {
       headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` }
     })
-    console.log('🧹 Redis-Cache gelöscht')
     return res.json({ success: true, message: 'Cache gelöscht' })
   } catch (err) {
-    console.error('❌ Fehler beim Cache-Löschen:', err.message)
     return res.status(500).json({ success: false, error: 'Cache konnte nicht gelöscht werden' })
   }
 })
@@ -294,7 +286,6 @@ app.get('/api/cache-status', async (req, res) => {
     const response = await axios.get(`${UPSTASH_URL}/get/faq`, {
       headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` }
     })
-
     const cached = response.data?.result
     if (cached) {
       return res.json({
@@ -302,10 +293,8 @@ app.get('/api/cache-status', async (req, res) => {
         count: JSON.parse(cached).length
       })
     }
-
     return res.json({ cached: false })
   } catch (err) {
-    console.warn('❌ Fehler beim Cache-Check:', err.message)
     return res.status(500).json({ error: 'Fehler beim Prüfen des Redis-Caches' })
   }
 })
