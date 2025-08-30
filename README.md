@@ -32,21 +32,7 @@ Caching erfolgt über **Redis (Upstash)**, Logs in **Postgres**.
 - Speicherung aller Chat-Logs (`chat_log` Tabelle in Postgres)  
 
 ---
-[
-  {
-    "frage": "Was kostet eine Badrenovierung?",
-    "antwort": "Die Kosten hängen vom Zustand und Ihren Wünschen ab. Wir beraten Sie gern persönlich."
-  },
-  {
-    "frage": "Übernehmt ihr auch Trockenbau?",
-    "antwort": "Ja, Trockenbau gehört zu unseren Kernleistungen."
-  }
-]
 
-
-
-
----
 ## 🚀 Setup (lokale Entwicklung)
 
 ```bash
@@ -63,3 +49,43 @@ cp .env.example .env
 
 # Server starten
 node server.js
+
+
+[
+  {
+    "frage": "Was kostet eine Badrenovierung?",
+    "antwort": "Die Kosten hängen vom Zustand und Ihren Wünschen ab. Wir beraten Sie gern persönlich."
+  },
+  {
+    "frage": "Übernehmt ihr auch Trockenbau?",
+    "antwort": "Ja, Trockenbau gehört zu unseren Kernleistungen."
+  }
+]
+
+🔄 Systemübersicht (Mermaid Diagramm)
+flowchart TD
+    A[User Nachricht] --> B[Chat Endpoint /api/chat]
+    B --> C{FAQ Match?}
+    C -->|Ja| D[Antwort aus Postgres FAQ]
+    C -->|Nein| E[GPT Fallback (OpenAI)]
+    D --> F[Antwort an User]
+    E --> F[Antwort an User]
+    F --> G[Speichern in Postgres chat_log]
+    D --> H[Optional Redis Cache]
+    E --> H
+
+---
+📦 Technologien
+Node.js + Express → REST API
+Postgres (Supabase/Render) → FAQ + Chat-Logs
+Redis (Upstash) → FAQ Cache
+Fuse.js → FAQ-Suchalgorithmus (Fuzzy Search)
+OpenAI GPT-4o → KI-Antworten
+GitHub Actions → Automatisierte Katalog/LLMS-Updates
+Render → Hosting
+---
+👨‍💻 Maintainer
+
+Profiausbau Aachen GmbH
+📧 info@profiausbau.com
+
