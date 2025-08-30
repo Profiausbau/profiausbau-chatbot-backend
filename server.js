@@ -71,7 +71,7 @@ const healthHandler = (req, res) => {
 app.get('/api/health', healthHandler)
 app.head('/api/health', healthHandler)
 
-// === Chat Endpoint ===
+// === Chat Endpoint (POST) ===
 app.post('/api/chat', async (req, res) => {
   const { message } = req.body
 
@@ -173,6 +173,16 @@ Wenn du etwas nicht weißt, bitte höflich um direkte Kontaktaufnahme:
   }
 })
 
+// === Chat GET-Fallback ===
+app.get('/api/chat', (req, res) => {
+  res.json({
+    info: "Dies ist der Chat-Endpoint (verwende POST mit { message }).",
+    example: { message: "Hallo" },
+    health: "/api/health"
+  })
+})
+
+// === FAQ API ===
 app.get('/api/faq', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM faq')
