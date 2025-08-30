@@ -32,7 +32,21 @@ Caching erfolgt über **Redis (Upstash)**, Logs in **Postgres**.
 - Speicherung aller Chat-Logs (`chat_log` Tabelle in Postgres)  
 
 ---
+[
+  {
+    "frage": "Was kostet eine Badrenovierung?",
+    "antwort": "Die Kosten hängen vom Zustand und Ihren Wünschen ab. Wir beraten Sie gern persönlich."
+  },
+  {
+    "frage": "Übernehmt ihr auch Trockenbau?",
+    "antwort": "Ja, Trockenbau gehört zu unseren Kernleistungen."
+  }
+]
 
+
+
+
+---
 ## 🚀 Setup (lokale Entwicklung)
 
 ```bash
