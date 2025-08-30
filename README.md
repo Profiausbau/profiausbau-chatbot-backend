@@ -1,40 +1,39 @@
 # 🤖 Profiausbau Aachen GmbH Chatbot Backend
 
 Dies ist das Chatbot-Backend für die **Profiausbau Aachen GmbH**.  
-Es verarbeitet FAQs aus der Datenbank (`faq`-Tabelle, gepflegt über Admin-Panel), nutzt Redis-Caching zur Beschleunigung und bietet einen Chat-Endpoint mit GPT-Fallback.
+Es verarbeitet FAQs aus der Datenbank (`faq`), bietet eine Admin-Seite zur Pflege und einen Chat-Endpoint mit GPT-Fallback.
 
 ---
 
 ## 🌐 Wichtige URLs
 
 - **Admin-Seite (FAQ bearbeiten):**  
-  [https://profiausbau-chatbot-backend.onrender.com/admin.html](https://profiausbau-chatbot-backend.onrender.com/admin.html)
-
+  <a href="https://profiausbau-chatbot-backend.onrender.com/admin.html" target="_blank">https://profiausbau-chatbot-backend.onrender.com/admin.html</a>
+ 
 - **FAQ-API (liefert aktuelle FAQ-Einträge):**  
-  [https://profiausbau-chatbot-backend.onrender.com/api/faq](https://profiausbau-chatbot-backend.onrender.com/api/faq)
+  <a href="https://profiausbau-chatbot-backend.onrender.com/api/faq" target="_blank">https://profiausbau-chatbot-backend.onrender.com/api/faq</a>
 
 - **Chat-Endpoint (POST mit `{ message }`):**  
-  [https://profiausbau-chatbot-backend.onrender.com/api/chat](https://profiausbau-chatbot-backend.onrender.com/api/chat)
+  <a href="https://profiausbau-chatbot-backend.onrender.com/api/chat" target="_blank">https://profiausbau-chatbot-backend.onrender.com/api/chat</a>
 
-- **Health Check (für Monitoring):**  
-  [https://profiausbau-chatbot-backend.onrender.com/api/health](https://profiausbau-chatbot-backend.onrender.com/api/health)
+- **Health-Check (für Monitoring):**  
+  <a href="https://profiausbau-chatbot-backend.onrender.com/api/health" target="_blank">https://profiausbau-chatbot-backend.onrender.com/api/health</a>
 
 ---
 
 ## ⚙️ Funktionen
 
-- Verwaltung von FAQ-Daten in der PostgreSQL-Datenbank (`faq`-Tabelle)  
-- Redis Cache (Upstash) für schnelle FAQ-Abfragen  
-- Chat-Endpoint mit FAQ-Matching (Fuse.js) und GPT-Fallback  
-- Admin-Oberfläche mit Login & JSON-Editor  
-- Logging von Chatverläufen in der Tabelle `chat_log`  
-- Health-Endpoint (`/api/health`) für Monitoring und Warm-Up  
+- Verwaltung von FAQ-Daten (PostgreSQL `faq`-Tabelle)  
+- Chat-Endpoint mit **FAQ-Matching** (Fuse.js) und **GPT-Fallback**  
+- Admin-Oberfläche mit Login, JSON-Editor und Cache-Verwaltung  
+- Speicherung aller Chats in `chat_log` (inkl. Quelle: `faq` oder `gpt`)  
+- Automatische **FAQ-Kandidaten** aus echten Nutzerfragen  
 
 ---
 
 ## 📋 FAQ-Beispiele
 
-So sieht die Struktur der FAQ-Daten aus (Beispieleinträge aus der Datenbank):
+So sieht die Struktur in der FAQ-Datenbank (`faq`) aus:
 
 ```json
 [
